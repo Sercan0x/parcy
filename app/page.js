@@ -36,7 +36,7 @@ export default function Page() {
   const [usdc, setUsdc] = useState(null);
   const [log, setLog] = useState("Ready.\nUI initialized.");
   const [canCreate, setCanCreate] = useState(false);
-
+  
   const [currentPage, setCurrentPage] = useState("pay");
 
   const [creating, setCreating] = useState(false);
@@ -61,7 +61,7 @@ export default function Page() {
   const [editNewId, setEditNewId] = useState("");
   const [editNewAmount, setEditNewAmount] = useState("");
   const [editNewDesc, setEditNewDesc] = useState("");
-
+  
   const [txHashCache, setTxHashCache] = useState({});
 
   function appendLog(msg) {
@@ -165,11 +165,11 @@ export default function Page() {
 
   async function lookupInvoice(id) {
     if (!id.trim()) {
-      appendLog("Invoice ID is empty.");
-      return null;
+        appendLog("Invoice ID is empty.");
+        return null;
     }
     const trimmedId = id.trim();
-
+    
     try {
       appendLog("Loading invoice: " + trimmedId);
 
@@ -196,6 +196,52 @@ export default function Page() {
               appendLog(`Tx Hash from cache: ${foundTxHash.slice(0, 10)}...`);
           } else if (lastTxHash) {
               foundTxHash = lastTxHash;
+          } else {
+              try {
+                const currentBlock = await rpcProvider.getBlockNumber();
+                const maxSearchBlocks = 100000000; // Search up to 10M blocks back
+                const chunkSize = 10000; // RPC limit
+                
+                const idHash = ethers.id(trimmedId);
+                let searchFromBlock = currentBlock - chunkSize;
+                let attempts = 0;
+                const maxAttempts = Math.ceil(maxSearchBlocks / chunkSize);
+                
+                appendLog(`Searching for payment tx (up to ${maxSearchBlocks} blocks back)...`);
+                
+                while (!foundTxHash && attempts < maxAttempts && searchFromBlock > 0) {
+                  attempts++;
+                  const fromBlock = Math.max(0, searchFromBlock);
+                  const toBlock = fromBlock + chunkSize;
+                  
+                  if (attempts > 1) {
+                    appendLog(`  Checking blocks ${fromBlock} - ${toBlock}...`);
+                  }
+                  
+                  const filter = readPayArc.filters.InvoicePaid(idHash);
+                  const events = await readPayArc.queryFilter(filter, fromBlock, toBlock);
+                  
+                  if (events.length > 0) {
+                    foundTxHash = events[0].transactionHash;
+                    setTxHashCache(prev => ({...prev, [trimmedId]: foundTxHash}));
+                    appendLog(`✓ Tx Hash found at block ~${events[0].blockNumber}: ${foundTxHash.slice(0, 10)}...`);
+                    break;
+                  }
+                  
+                  searchFromBlock -= chunkSize;
+                  
+                  if (attempts % 3 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                  }
+                }
+                
+                if (!foundTxHash) {
+                  appendLog(`⚠ Payment tx not found in last ${maxSearchBlocks} blocks.`);
+                }
+              } catch (err) {
+                console.error("Event lookup error:", err);
+                appendLog(`Event search failed: ${err.message}`);
+              }
           }
       }
 
@@ -213,6 +259,7 @@ export default function Page() {
 
       appendLog("Invoice loaded.");
       return invoiceData;
+
     } catch (e) {
       console.error(e);
       appendLog("Error loading invoice.");
@@ -221,24 +268,24 @@ export default function Page() {
   }
 
   async function handlePayLookup() {
-    const result = await lookupInvoice(lookupId);
-    setInvoice(result);
-    setLastTxHash(result?.txHash || null);
+      const result = await lookupInvoice(lookupId);
+      setInvoice(result);
+      setLastTxHash(result?.txHash || null);
   }
 
   async function handleManageLookup() {
-    const result = await lookupInvoice(manageId);
-    setManagedInvoice(result);
-    setEditMode(false);
-    if (result) {
-      setEditNewId(result.id);
-      setEditNewAmount(result.amountFormatted);
-      setEditNewDesc(result.description || "");
-    } else {
-      setEditNewId("");
-      setEditNewAmount("");
-      setEditNewDesc("");
-    }
+      const result = await lookupInvoice(manageId);
+      setManagedInvoice(result);
+      setEditMode(false);
+      if (result) {
+          setEditNewId(result.id);
+          setEditNewAmount(result.amountFormatted);
+          setEditNewDesc(result.description || "");
+      } else {
+          setEditNewId("");
+          setEditNewAmount("");
+          setEditNewDesc("");
+      }
   }
 
   async function handleApprove() {
@@ -251,9 +298,9 @@ export default function Page() {
 
       const fee = invoice.amountRaw / BigInt(100);
       const totalAmountToApprove = invoice.amountRaw + fee;
-
+      
       const tx = await usdc.approve(PAYARC_ADDRESS, totalAmountToApprove);
-
+      
       appendLog("Approve tx: " + tx.hash);
       await tx.wait();
 
@@ -276,9 +323,9 @@ export default function Page() {
 
       const fee = invoice.amountRaw / BigInt(100);
       const totalRequired = invoice.amountRaw + fee;
-
+      
       const allowance = await usdc.allowance(wallet, PAYARC_ADDRESS);
-
+      
       if (allowance < totalRequired) {
           appendLog("Allowance too low. Approve for total payment (Invoice + Fee) first.");
           setPaying(false);
@@ -286,7 +333,7 @@ export default function Page() {
       }
 
       const tx = await payArc.payInvoice(invoice.id);
-
+      
       const actualTxHash = tx.hash;
       setLastTxHash(actualTxHash);
       setTxHashCache(prev => ({...prev, [invoice.id]: actualTxHash}));
@@ -295,49 +342,12 @@ export default function Page() {
       await tx.wait();
 
       appendLog("Invoice paid. Tx confirmed.");
-
+      
       await handlePayLookup();
-
+      
     } catch (e) {
       console.error(e);
       appendLog("Payment failed: " + (e.reason || e.message));
-      setLastTxHash(null);
-    } finally {
-      setPaying(false);
-    }
-  }
-
-  async function handlePayOneClick() {
-    if (!wallet) return appendLog("Connect wallet first.");
-    if (!invoice) return appendLog("Lookup an invoice first.");
-
-    try {
-      setPaying(true);
-
-      const fee = invoice.amountRaw / BigInt(100);
-      const totalRequired = invoice.amountRaw + fee;
-
-      const allowance = await usdc.allowance(wallet, PAYARC_ADDRESS);
-
-      if (allowance < totalRequired) {
-        appendLog("Approving full amount (invoice + fee)...");
-        const txApprove = await usdc.approve(PAYARC_ADDRESS, totalRequired);
-        appendLog("Approve tx: " + txApprove.hash);
-        await txApprove.wait();
-        appendLog("Approve confirmed");
-      }
-
-      appendLog("Paying invoice...");
-      const txPay = await payArc.payInvoice(invoice.id);
-      setLastTxHash(txPay.hash);
-      setTxHashCache(prev => ({...prev, [invoice.id]: txPay.hash}));
-      appendLog("Pay tx sent: " + txPay.hash);
-      await txPay.wait();
-      appendLog("Invoice paid. Tx confirmed.");
-
-      await handlePayLookup();
-    } catch (e) {
-      appendLog("❌ One-click payment failed: " + (e.reason || e.message));
       setLastTxHash(null);
     } finally {
       setPaying(false);
@@ -367,60 +377,61 @@ export default function Page() {
       setDeleting(false);
     }
   }
-
+  
   async function handleEditInvoice() {
-    if (!wallet) return appendLog("Connect wallet first.");
-    if (!managedInvoice) return appendLog("Invoice not loaded.");
-    if (managedInvoice.issuer.toLowerCase() !== wallet.toLowerCase()) return appendLog("Cannot edit: Only the issuer can edit this invoice.");
-    if (managedInvoice.paid) return appendLog("Cannot edit: Paid invoices cannot be edited.");
-    if (!editNewId.trim() || !editNewAmount.trim()) return appendLog("New ID and Amount required.");
+      if (!wallet) return appendLog("Connect wallet first.");
+      if (!managedInvoice) return appendLog("Invoice not loaded.");
+      if (managedInvoice.issuer.toLowerCase() !== wallet.toLowerCase()) return appendLog("Cannot edit: Only the issuer can edit this invoice.");
+      if (managedInvoice.paid) return appendLog("Cannot edit: Paid invoices cannot be edited.");
+      if (!editNewId.trim() || !editNewAmount.trim()) return appendLog("New ID and Amount required.");
 
-    const oldId = managedInvoice.id;
-    const newIdValue = editNewId.trim();
-    const newDescValue = editNewDesc.trim();
+      const oldId = managedInvoice.id;
+      const newIdValue = editNewId.trim();
+      const newDescValue = editNewDesc.trim();
 
-    try {
-      setEditing(true);
-      const newAmountValue = ethers.parseUnits(editNewAmount, decimals);
+      try {
+          setEditing(true);
+          const newAmountValue = ethers.parseUnits(editNewAmount, decimals);
 
-      appendLog(`Editing invoice ${oldId} → ${newIdValue}...`);
+          appendLog(`Editing invoice ${oldId} → ${newIdValue}...`);
 
-      const tx = await payArc.editInvoice(oldId, newIdValue, newAmountValue, newDescValue);
-      appendLog("Edit Tx sent: " + tx.hash);
-      await tx.wait();
+          const tx = await payArc.editInvoice(oldId, newIdValue, newAmountValue, newDescValue);
+          appendLog("Edit Tx sent: " + tx.hash);
+          await tx.wait();
 
-      appendLog("✓ Invoice edited successfully on blockchain!");
-      appendLog(`Old ID "${oldId}" deleted, new ID "${newIdValue}" created.`);
+          appendLog("✓ Invoice edited successfully on blockchain!");
+          appendLog(`Old ID "${oldId}" deleted, new ID "${newIdValue}" created.`);
+          
+          setManageId(newIdValue);
+          
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          appendLog(`Fetching invoice with new ID: ${newIdValue}`);
+          const refreshedInvoice = await lookupInvoice(newIdValue);
+          
+          if (refreshedInvoice) {
+              setManagedInvoice(refreshedInvoice);
+              setEditNewId(refreshedInvoice.id);
+              setEditNewAmount(refreshedInvoice.amountFormatted);
+              setEditNewDesc(refreshedInvoice.description || "");
+              appendLog(`✓ Successfully loaded invoice with ID: ${newIdValue}`);
+          } else {
+              appendLog("⚠ Automatic reload failed. Please manually lookup with new ID: " + newIdValue);
+              setManagedInvoice(null);
+          }
 
-      setManageId(newIdValue);
+          setEditMode(false);
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      appendLog(`Fetching invoice with new ID: ${newIdValue}`);
-      const refreshedInvoice = await lookupInvoice(newIdValue);
-
-      if (refreshedInvoice) {
-          setManagedInvoice(refreshedInvoice);
-          setEditNewId(refreshedInvoice.id);
-          setEditNewAmount(refreshedInvoice.amountFormatted);
-          setEditNewDesc(refreshedInvoice.description || "");
-          appendLog(`✓ Successfully loaded invoice with ID: ${newIdValue}`);
-      } else {
-          appendLog("⚠ Automatic reload failed. Please manually lookup with new ID: " + newIdValue);
-          setManagedInvoice(null);
+      } catch (e) {
+          console.error(e);
+          appendLog("Edit failed: " + (e.reason || e.message));
+      } finally {
+          setEditing(false);
       }
-
-      setEditMode(false);
-
-    } catch (e) {
-        console.error(e);
-        appendLog("Edit failed: " + (e.reason || e.message));
-    } finally {
-        setEditing(false);
-    }
   }
 
   const shortWallet = wallet ? wallet.slice(0, 6) + "..." + wallet.slice(-4) : "";
+
 
   const renderContent = useMemo(() => {
     switch (currentPage) {
@@ -469,7 +480,7 @@ export default function Page() {
                   <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: 13 }}>
                     <div className="detail-item">
                       <div className="label">Amount</div>
-                      <div className="value amount-value"><b>{invoice.amountFormatted} USDC</b></div>
+                      <div className="value amount-value">**{invoice.amountFormatted} USDC**</div>
                     </div>
                     <div className="detail-item">
                       <div className="label">Description</div>
@@ -481,7 +492,7 @@ export default function Page() {
                     </div>
                     <div className="detail-item">
                       <div className="label">Payer</div>
-                      <div className="value address-value">{invoice.payer?.slice?.(0, 6)}...{invoice.payer?.slice?.(-4)}</div>
+                      <div className="value address-value">{invoice.payer.slice(0, 6)}...{invoice.payer.slice(-4)}</div>
                     </div>
                     <div className="detail-item" style={{ gridColumn: 'span 2' }}>
                       <div className="label">Paid at</div>
@@ -523,15 +534,6 @@ export default function Page() {
                           style={{ marginLeft: 8 }}
                         >
                           {paying ? "Paying..." : "Pay Invoice"}
-                        </button>
-
-                        <button
-                          className="primary"
-                          onClick={handlePayOneClick}
-                          disabled={paying || !wallet}
-                          style={{ marginLeft: 8, background: "#4ade80" }}
-                        >
-                          {paying ? "Processing..." : "One-Click Pay"}
                         </button>
                       </>
                     ) : (

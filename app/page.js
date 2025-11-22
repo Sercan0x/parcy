@@ -474,7 +474,7 @@ export default function Page() {
                       border: invoice.paid ? '1px solid #4ade80' : '1px solid #f87171',
                     }}
                   >
-                    {invoice.paid ? 'PAID' : 'NOT PAID'}
+                    {invoice.paid ? 'PAID' : 'UNPAID'}
                   </div>
 
                   <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: 13 }}>

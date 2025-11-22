@@ -12,6 +12,7 @@ body {
   display: flex;
 }
 
+/* LOADING SCREEN */
 .loading-screen {
   position: fixed;
   top: 0;
@@ -95,7 +96,7 @@ body {
 
 /* SIDEBAR */
 .sidebar {
-  width: 280px;
+  width: 280px; 
   padding: 22px 20px;
   background: radial-gradient(circle at top, #262844 0, #11111a 55%, #090910 100%);
   border-right: 1px solid rgba(90, 90, 135, 0.6);
@@ -110,8 +111,6 @@ body {
   gap: 8px;
   font-weight: 600;
   font-size: 18px;
-  /* Logo ve yazıyı ortalar */
-  margin: 0 auto;
 }
 
 .logo-badge {
@@ -232,7 +231,7 @@ body {
 }
 
 .wallet-pill:hover {
-    filter: brightness(1.1);
+    background: #1f1f2a;
     box-shadow: 0 0 8px rgba(108, 122, 255, 0.3);
 }
 
@@ -277,7 +276,7 @@ body {
 }
 
 .panel h3 {
-  font-size: 18px;
+  font-size: 18px; 
   margin-bottom: 10px;
   font-weight: 600;
 }
@@ -358,7 +357,7 @@ button:disabled {
   padding: 10px;
   border: 1px solid #28283a;
   max-height: 250px;
-  min-height: 250px;
+  min-height: 250px; 
   overflow-y: auto;
   white-space: pre-line;
   scrollbar-width: thin;
@@ -471,7 +470,7 @@ button:disabled {
     justify-content: space-between;
     padding: 15px;
   }
-
+  
   .sidebar > div:nth-child(2) {
       width: 100%;
       margin-top: 15px;
@@ -495,7 +494,7 @@ button:disabled {
   .sidebar-footer {
     display: none;
   }
-
+  
   .main {
     padding: 15px;
   }
@@ -503,7 +502,7 @@ button:disabled {
   .grid {
     grid-template-columns: 1fr;
   }
-
+  
   .log-panel {
       order: 3;
       min-height: 200px;

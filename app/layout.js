@@ -4,9 +4,9 @@ export const metadata = {
   title: "Parcy (TEST)",
   description: "Decentralized invoicing platform on Arc Network Testnet",
   icons: {
-    icon: 'https://i.ibb.co/nqDXzSnC/icon.png',
-    shortcut: 'https://i.ibb.co/nqDXzSnC/icon.png',
-    apple: 'https://i.ibb.co/nqDXzSnC/icon.png',
+    icon: 'https://i.ibb.co/0Rh5vh69/parcyicon.png',
+    shortcut: 'https://i.ibb.co/0Rh5vh69/parcyicon.png',
+    apple: 'https://i.ibb.co/0Rh5vh69/parcyicon.png',
   },
 };
 

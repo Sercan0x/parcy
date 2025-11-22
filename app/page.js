@@ -1,10 +1,5 @@
-<button
-                        className="primary"
-                        onClick={handlePay}
-                        disabled={paying || !wallet}
-                      >
-                        {paying ? "Paying..." : "Pay Invoice"}
-                      </button>"use client";
+
+"use client";
 
 import { useState, useMemo } from "react";
 import { ethers } from "ethers";

@@ -12,6 +12,7 @@ body {
   display: flex;
 }
 
+/* LOADING SCREEN */
 .loading-screen {
   position: fixed;
   top: 0;
@@ -93,21 +94,23 @@ body {
   background: rgba(8, 8, 14, 0.96);
 }
 
-.sidebar > div:first-child {
-  width: 100%;
+/* SIDEBAR */
+.sidebar {
+  width: 280px; 
+  padding: 22px 20px;
+  background: radial-gradient(circle at top, #262844 0, #11111a 55%, #090910 100%);
+  border-right: 1px solid rgba(90, 90, 135, 0.6);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  justify-content: center; 
   gap: 8px;
   font-weight: 600;
   font-size: 18px;
-  width: 100%;              
-  text-align: center;   
 }
 
 .logo-badge {
@@ -187,6 +190,7 @@ body {
   align-items: center;
 }
 
+/* MAIN */
 .main {
   flex: 1;
   padding: 22px 24px;
@@ -272,7 +276,7 @@ body {
 }
 
 .panel h3 {
-  font-size: 18px;
+  font-size: 18px; 
   margin-bottom: 10px;
   font-weight: 600;
 }
@@ -353,7 +357,7 @@ button:disabled {
   padding: 10px;
   border: 1px solid #28283a;
   max-height: 250px;
-  min-height: 250px;
+  min-height: 250px; 
   overflow-y: auto;
   white-space: pre-line;
   scrollbar-width: thin;

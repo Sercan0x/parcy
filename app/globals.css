@@ -100,12 +100,6 @@ body {
 }
 
 .logo {
-  justify-content: center;
-  width: 100%;
-  text-align: center;
-}
-
-.logo {
   display: flex;
   align-items: center;
   justify-content: center; 

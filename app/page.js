@@ -761,7 +761,7 @@ export default function Page() {
             <section className="panel" style={{ gridColumn: 'span 2' }}>
               <div style={{ textAlign: 'center', marginBottom: 30 }}>
                 <img 
-                  src="https://i.ibb.co/jvnqfNKV/logopng.png" 
+                  src="https://i.ibb.co/7tdyjcgv/logonew.png" 
                   alt="Parcy Logo" 
                   style={{ maxWidth: 200, height: 'auto', marginBottom: 20 }}
                 />
